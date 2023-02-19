@@ -1,0 +1,44 @@
+---
+title: "Exploratory data analysis"
+subtitle: "for collagen diseases dataset"
+author:
+  - name: Xiaojing Ni
+    affiliations:
+      - name: Georgetown University        
+date: today
+format:
+    html:
+        toc: true
+        embed-resources: true
+        theme: default
+        code-copy: true
+        code-line-numbers: true
+        number-sections: true
+        highlight-style: github
+        link-external-icon: true
+        link-external-newwindow: true
+---
+## Data summary
+## Initial questions
+## Data munging
+## Exploratory analysis
+## Final plots
+## Technical summary
+```{r}
+#| echo: false
+#| warning: false
+library(reticulate)
+use_python("/Users/xiaojingni/miniforge3/envs/anly503/bin/python")
+```
+
+```{python}
+## python code 
+a = 1
+print(a)
+```
+```{r}
+## R code 
+a = 1
+print(a)
+```
+

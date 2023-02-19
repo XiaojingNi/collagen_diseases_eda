@@ -137,3 +137,9 @@ dmypy.json
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# r renv files
+#######################
+.lock
+renv*.
+.Rprofile

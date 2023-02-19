@@ -1,0 +1,332 @@
+---
+title: "Exploratory data analysis"
+subtitle: "for collagen diseases dataset"
+author:
+  - name: Xiaojing Ni
+    affiliations:
+      - name: Georgetown University        
+date: today
+format:
+    html:
+        toc: true
+        embed-resources: true
+        theme: default
+        code-copy: true
+        code-line-numbers: true
+        number-sections: true
+        highlight-style: github
+        link-external-icon: true
+        link-external-newwindow: true
+---
+## Data summary
+In order to explore the mechanisms of collagen diseases, a dataset is extracted from a University hospital database. The overall objective is to study potential factors helping to detect and predict thrombosis, one of the severe complications cased by collagen diseases. The dataset contains three parts: users' information and diagnosis, examination results of users' having thrombosis, and general laboratory examination results. <br>
+
+The examination related to thrombosis mainly through the blood test. Thus, the dataset describing examination results of users' having thrombosis contains anti-Cardiolipin antibody measurement and degree of coagulation measurement (the action or process of blood changing to a solid or semi-solid state), along with the degree of thrombosis. The general laboratory examination results include general blood test, such as Red blood cell count, blood glucose, and total bilirubin. Those tests are not necessary relate to diagnosed thrombosis and can happen anytime when doctors think the patient need them. The three datasets are connected by patient ID. The datasets are one to many relation. For example, one patient can have various tests on same or different date. And patients can also have one or more diagnosis. 
+
+## Initial questions
+The initial questions are listed below. 
+<ul>  
+<li> What are the symptoms causing the doctor suspect a patient is having a thrombosis?
+<li> Are some of the measurements correlated to each other? 
+<li> Are some of the symptoms always occurring together? 
+</ul>
+
+## Data munging
+```{r}
+#| echo: false
+#| warning: false
+### this cell is used to run python in qmd so that one notebook can run both r and python
+library(reticulate)
+use_python("/Users/xiaojingni/miniforge3/envs/anly503/bin/python")
+```
+```{python}
+# | echo: false
+# | warning: false
+# import packages
+from dateutil import relativedelta
+from datetime import datetime
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import re
+import collections
+```
+
+### TSUMOTO_A
+#### load patient data
+Some feature meaning
+<ul>
+<li>Description: the date when a patient was input
+<li>First date: the date when a patient came to the hospital
+<li>Admission: patient was admitted to the hospital or followed at the outpatient clinic
+<li>Diagnosis: some patients may suffer from several diseases
+</ul>
+
+```{python}
+# read data
+patients_df_raw = pd.read_csv(
+    "../data/TSUMOTO_A.csv", encoding='windows-1252')
+
+```
+#### Missing values and duplicates
+```{python}
+# basic info of the raw data
+patients_df_raw
+patients_df_raw.info()
+```
+There are some missing values. The missing values are shown below. All of the records have a Id and Diagnosis. Birthday has one missing value. There are 248 patient without the "First Date" information (the date when a patient came to the hospital). 
+```{python}
+patients_df_raw.isna().sum()
+```
+Check if ID column has duplicate value
+```{python}
+# check if ID have duplicate value
+if len(patients_df_raw) != len(set(patients_df_raw.ID)):
+    print("duplicates found in the list")
+else:
+    print("No duplicates found in the list")
+```
+List duplicate ID and their records
+```{python}
+# below code is revised from https://www.trainingint.com/how-to-find-duplicates-in-a-python-list.html
+
+id_set = set()
+dupset = set()
+for i in patients_df_raw.ID:
+    if i not in id_set:
+        id_set.add(i)
+    else:
+        # this method catches the first duplicate entries, and appends them to the list
+        dupset.add(i)
+# The next step is to print the duplicate entries, and the unique entries
+print("List of duplicates\n",
+      patients_df_raw.loc[patients_df_raw['ID'].isin(list(dupset))])
+```
+For patient 2557319, only one record has full data. Thus, the duplicate is probably from a bad entry. Delete one record will solve the problem. For patient 5807039, the first date is the same, but the date input is not, keeping the one with early input. 
+
+```{python}
+patients_df_raw = patients_df_raw.drop(labels=[264, 1215], axis=0)
+
+# sanity check
+# check if ID have duplicate value
+if len(patients_df_raw) != len(set(patients_df_raw.ID)):
+    print("duplicates found in the list")
+else:
+    print("No duplicates found in the list")
+```
+#### Cleaning and data format
+Some of the date entries have type, replacing the letter with "" with solve this. Below I created three new column to change the format of the date columns: "Birthday", "Description", and "First Date". 
+```{python}
+# reformat
+# Birthday
+patients_df_raw['b-day'] = pd.to_datetime(patients_df_raw['Birthday'])
+
+# Description day
+patients_df_raw['d-day'] = pd.to_datetime(patients_df_raw['Description'])
+
+# First Date, remove typo letters
+patients_df_raw['f-day'] = pd.to_datetime(
+    patients_df_raw['First Date'].replace(r"[A-Z]", "", regex=True))
+```
+```{python}
+# f-day (first come to hospital) and d-day need to larger than birthday
+# if not, delete those entries
+
+patients_df_raw = patients_df_raw[(patients_df_raw['f-day']
+                                  > patients_df_raw['b-day']) & (patients_df_raw['d-day'] > patients_df_raw['b-day'])]
+```
+#### New variables
+In this session, one new column, `age_of_first_come` is created based on the difference of Description and birthday.
+```{python}
+patients_df_raw['age_of_first_come'] = patients_df_raw.apply(
+    lambda row: relativedelta.relativedelta(row['d-day'], row['b-day']).years, axis=1)
+# sanity check
+patients_df_raw.head(5)
+```
+```{python}
+### save to local
+patients_df_raw.to_csv('tsumotoa_clean.csv', index=False)  
+```
+
+### TSUMOTO_B
+#### load data
+
+```{python}
+# read data
+slab_df_raw = pd.read_csv("../data/TSUMOTO_B.csv", encoding='windows-1252')
+
+```
+```{python}
+## examine the data
+slab_df_raw.head(5)
+slab_df_raw.info()
+```
+```{python}
+## values of different columns
+for nm in ["KCT", "RVVT", "LAC", "ANA", "ANA Pattern"]:
+    print(slab_df_raw[nm].value_counts())
+    print("-------------------")
+```
+
+#### Missing values and duplicates
+The dataset contains missing values for some of the columns. Thus, for different purpose, I will use different strategies to deal with missing data. This dataset allows ID has duplication, Thus, here, I only check for duplicate entries for data quality check purpose. <br>
+Joining with other datasets requires ID column. Thus, for join analysis purpose, those records without ID information will be removed. 
+```{python}
+# deduplicate
+slab_df_raw.drop_duplicates()
+```
+```{python}
+###### For join dataset 
+join_B = slab_df_raw.dropna(subset=['ID'])
+join_B.info
+```
+
+#### Cleaning and data format
+##### Parsing Diagnosis column
+The diagnosis column contains one or more diagnosis. This session is to parse the column into several key words for further analysis. 
+For those thrombosis positive patient, first, using special characters (including space) parses the text, and then calculating the top 10 frequency words. The similar procedure is repeated for those thrombosis negative patient. 
+```{python}
+## Thrombosis positive words
+positive_words = [re.split(r'[^a-zA-Z0-9/s]+', text) for text,label in 
+                  zip(slab_df_raw['Diagnosis'], slab_df_raw['Thrombosis']) if label >= 1 and type(text)!=float]
+
+positive_dict = collections.Counter()
+for phrases in positive_words:
+    positive_dict += collections.Counter(phrases)
+
+## clean up keywords
+if "" in positive_dict:
+    positive_dict.pop("")
+    
+positive_top10 = sorted(positive_dict.items(), key = lambda x: x[1], reverse = True)[:10]
+positive_top10
+```
+```{python}
+## Thrombosis negative words
+negative_words = [re.split(r'[^a-zA-Z0-9/s]+', text) for text,label in 
+                  zip(slab_df_raw['Diagnosis'], slab_df_raw['Thrombosis']) if label == 0 and type(text)!=float]
+
+negative_dict = collections.Counter()
+for phrases in negative_words:
+    negative_dict += collections.Counter(phrases)
+    
+## clean up keywords
+if "" in negative_dict:
+    negative_dict.pop("")
+    
+negative_top10 = sorted(negative_dict.items(), key = lambda x: x[1], reverse = True)[:10]
+negative_top10
+```
+##### Data format
+Here, I change the examination date to datetime format.
+```{python}
+join_B['Examination Date'] = pd.to_datetime(join_B['Examination Date'])
+```
+### TSUMOTO_C
+#### load data
+
+```{python}
+# read data
+lab_df_raw = pd.read_csv("../data/TSUMOTO_C.csv", encoding='windows-1252')
+
+```
+```{python}
+## examine the data
+slab_df_raw.head(5)
+slab_df_raw.info()
+```
+```{python}
+## values of different columns
+for nm in ["KCT", "RVVT", "LAC", "ANA", "ANA Pattern"]:
+    print(slab_df_raw[nm].value_counts())
+    print("-------------------")
+```
+
+#### Missing values and duplicates
+The dataset contains missing values for some of the columns. Thus, for different purpose, I will use different strategies to deal with missing data. This dataset allows ID has duplication, Thus, here, I only check for duplicate entries for data quality check purpose. <br>
+Joining with other datasets requires ID column. Thus, for join analysis purpose, those records without ID information will be removed. 
+```{python}
+# deduplicate
+slab_df_raw.drop_duplicates()
+```
+```{python}
+###### For join dataset 
+join_B = slab_df_raw.dropna(subset=['ID'])
+join_B.info
+```
+
+#### Cleaning and data format
+
+
+
+
+
+
+clean data, 
+count and deal with na
+parsing symptoms and diagonosis
+merge three dataset
+
+## Exploratory analysis
+### Summary statistics
+```{python}
+
+# distribution of sex
+print(patients_df_raw['SEX'].value_counts())
+```
+Female is the dominated gender of the patients. 
+```{python}
+## join keywords
+key_set = {k for k,_ in positive_top10}|{k for k,_ in negative_top10}
+## order by Thrombosis positive decreasing
+key_ls = sorted(key_set, key = lambda x: (positive_dict[x], negative_dict[x]))
+
+## plot keywords RELATIVE frequency
+nb_positive,nb_negative = sum(slab_df_raw['Thrombosis']>0),sum(slab_df_raw['Thrombosis']==0)
+hN = plt.barh(key_ls, [negative_dict[k]/nb_negative for k in key_ls], label='negative', color='g')
+hS = plt.barh(key_ls, [-positive_dict[k]/nb_positive for k in key_ls], label = 'positive')
+
+plt.xlim([-1,1])
+xt = plt.xticks()
+n = xt[0]
+s = ['%.1f'%abs(i) for i in n]
+plt.xticks(n, s)
+plt.legend(loc='best')
+plt.axvline(0.0)
+plt.show()
+```
+
+most important symptoms -- rae's figure 6
+correlation plot
+based on correlation plot, pick one or two to examine the realtionship --  linear or non-linear 
+also based on correlation plot, pick one or two to examine distribution differed by group (neg, pos, serv)
+repeated test -- measurement distribution and change
+
+## Final plots
+most important symptoms -- rae's figure 6
+correlation plot
+based on correlation plot, pick one or two to examine the realtionship --  linear or non-linear 
+or also based on correlation plot, pick one or two to examine distribution differed by group (neg, pos, serv)
+repeated test -- measurement distribution and change
+
+## Technical summary
+
+
+
+```{python}
+# python code
+a = 1
+print(a)
+```
+```{r}
+## R code 
+a = 1
+print(a)
+```
+
+
+
+
+
+
+
