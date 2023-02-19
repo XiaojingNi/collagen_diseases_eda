@@ -145,7 +145,7 @@ patients_df_raw.head(5)
 ```
 ```{python}
 ### save to local
-patients_df_raw.to_csv('tsumotoa_clean.csv', index=False)  
+patients_df_raw.to_csv('../data/tsumotoa_clean.csv', index=False)  
 ```
 
 ### TSUMOTO_B
