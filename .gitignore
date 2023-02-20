@@ -141,5 +141,5 @@ Thumbs.db
 # r renv files
 #######################
 .lock
-renv*.
+renv*
 .Rprofile
