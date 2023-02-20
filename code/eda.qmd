@@ -319,7 +319,7 @@ clab_df_raw['DNA-II'] = pd.to_numeric(clab_df_raw['DNA-II'], errors='coerce')
 For lab test, there are criteria indicating whether a indicator is out of normal range. In this session, new variable introduced based on those criteria. Note: those with gender difference will be dealt with later. 
 ```{python}
 clab_df = clab_df_raw.copy()
-clab_df.assign(is_GOT_normal=np.where(clab_df['GOT'] >= 60, 'no', np.where(clab_df['GOT'] < 60, 'yes', 'NaN')),  # is_GOT_normal N<60
+clab_df = clab_df.assign(is_GOT_normal=np.where(clab_df['GOT'] >= 60, 'no', np.where(clab_df['GOT'] < 60, 'yes', 'NaN')),  # is_GOT_normal N<60
                is_GPT_normal=np.where(clab_df['GPT'] >= 60, 'no', np.where(
                    clab_df['GPT'] < 60, 'yes', 'NaN')),  # is_GPT_normal N<60
                is_LDH_normal=np.where(clab_df['LDH'] >= 500, 'no', np.where(
@@ -410,7 +410,7 @@ join_df['d-day'] = pd.to_datetime(join_df['d-day'])
 join_df['f-day'] = pd.to_datetime(join_df['f-day'])
 join_df['Examination Date'] = pd.to_datetime(join_df['Examination Date'])
 join_df['Examination Date'] = pd.to_datetime(join_df['Examination Date'])
-join
+
 ```
 #### Missing values
 There are missing values in the data. some of there are caused by merging dataset. For example, there are patient only did special lab test but not regular, or the other way around. For now, we are not removing any of them. We will deal with missing values in EDA session with various strategies according to the features. 
@@ -421,19 +421,19 @@ join_df.isna().sum()
 # Examination Date for special examination need to larger than birthday
 # if not, delete those entries
 
-join_df = join_df[(join_df['Examination Date'] > join_df['b-day'])]
+join_df_2 = join_df[(join_df['Examination Date'] > join_df['b-day'])]
 ```
 #### New columns
 `Age of special exam` is the age the patient did the special examination.  
 ```{python}
-join_df['age_of_sexam'] = join_df.apply(
+join_df_2['age_of_sexam'] = join_df_2.apply(
     lambda row: relativedelta.relativedelta(row['Examination Date'], row['b-day']).years, axis=1)
 # sanity check
-join_df.head(5)
+join_df_2.head(5)
 ```
 `Is UA normal` depends on the gender, N > 8.0 (Male) N > 6.5 (Female). 
 ```{python}
-join_df.assign(is_UA_normal=np.where(((join_df['UA'] <= 8) & (join_df['SEX'] == 'M')), 'no', np.where(((join_df['UA'] < 8) & (join_df['SEX'] == 'M')), 'yes', np.where(((join_df['UA'] <= 6.5) & (join_df['SEX'] == 'F')), 'no',np.where(((join_df['UA'] > 6.5) & (join_df['SEX'] == 'F')), 'yes', 'NaN'))))) # N > 8.0 (Male) N > 6.5 (Female)
+join_df = join_df.assign(is_UA_normal=np.where(((join_df['UA'] <= 8) & (join_df['SEX'] == 'M')), 'no', np.where(((join_df['UA'] < 8) & (join_df['SEX'] == 'M')), 'yes', np.where(((join_df['UA'] <= 6.5) & (join_df['SEX'] == 'F')), 'no',np.where(((join_df['UA'] > 6.5) & (join_df['SEX'] == 'F')), 'yes', 'NaN'))))) # N > 8.0 (Male) N > 6.5 (Female)
 ```
 ## Exploratory analysis
 ### Individual datasets
@@ -586,7 +586,7 @@ There are some correlation in the data (@fig-heatmaplab). For example, APTT and 
 # | fig-align: "center"
 
 ## plot age and Thrombosis level
-temp = join_df.pivot(columns='Thrombosis', values='age_of_sexam')
+temp = join_df_2.pivot(columns='Thrombosis', values='age_of_sexam')
 _ = temp.plot.hist(bins=20)
 ```
 Different level of Thrombosis have various age distribution (@fig-agehist). Regardless of number of samples, severe thrombosis happens high in 30's, while level 2 thrombosis happens during younger age. 
@@ -596,31 +596,100 @@ Different level of Thrombosis have various age distribution (@fig-agehist). Rega
 # | fig-cap: "Parallel coordinates plot of general lab index"
 # | fig-align: "center"
 
-temp_df = join_df[['Thrombosis', 'KCT', 'RVVT', 'LAC']
+temp_df = join_df[['Thrombosis', 'is_GOT_normal', 'is_GPT_normal',
+       'is_LDH_normal', 'is_ALP_normal', 'is_TP_normal', 'is_ALB_normal',
+       'is_UN_normal', 'is_CRE_normal', 'is_TBIL_normal', 'is_TCHO_normal',
+       'is_TG_normal', 'is_CPK_normal', 'is_GLU_normal', 'is_WBC_normal',
+       'is_RBC_normal', 'is_HGB_normal', 'is_HCT_normal', 'is_PLT_normal',
+       'is_PT_normal', 'is_APTT_normal', 'is_FG_normal', 'is_PIC_normal',
+       'is_TAT_normal', 'is_UPRO_normal', 'is_IGG_normal', 'is_IGA_normal',
+       'is_IGM_normal', 'is_RF_normal', 'is_C3_normal', 'is_C4_normal',
+       'is_DNA_normal', 'is_DNAII_normal','is_UA_normal']
                   ]
-temp_df = slab_df[['Thrombosis', 'KCT', 'RVVT', 'LAC']
-                  ][KCT_present & RVVT_present & LAC_present].copy()
+temp_df = temp_df.dropna() ## don't need those without these information
+temp_df.reset_index(drop=True)
+
 plt.figure()
 
 pd.plotting.parallel_coordinates(
     temp_df, 'Thrombosis', sort_labels=True, colormap='viridis')
+plt.xticks(rotation=90)
 
 plt.show()
 ```
 
-most important symptoms -- rae's figure 6
-correlation plot
-based on correlation plot, pick one or two to examine the realtionship --  linear or non-linear 
-also based on correlation plot, pick one or two to examine distribution differed by group (neg, pos, serv)
-repeated test -- measurement distribution and change
-
-
 ## Final plots
-most important symptoms -- rae's figure 6
-correlation plot
-based on correlation plot, pick one or two to examine the realtionship --  linear or non-linear 
-or also based on correlation plot, pick one or two to examine distribution differed by group (neg, pos, serv)
-repeated test -- measurement distribution and change
+### Plot-01: Thrombosis VS Age
+```{python}
+import matplotlib as mpl
+from pathlib import Path
+cfgdir = mpl.get_configdir() # find your configuration folder
+p = Path(cfgdir)
+print(p)
+stylelib = (p / 'stylelib')
+stylelib.mkdir(exist_ok=True)
+path = stylelib / 'anly503.mplstyle' # create paths
+path.write_text(''' # write into the file
+figure.subplot.wspace : 0.06
+figure.figsize :  10, 4.8
+axes.prop_cycle : cycler(color=['9351A8', '68AC54', 'b', 'orangered'])
+axes.facecolor : F7F4F9
+font.family : arial
+lines.linewidth : 5
+axes.labelsize : 16
+xtick.labelsize : 16
+ytick.labelsize : 16
+axes.titlesize : 20
+lines.markersize : 12
+legend.fontsize: 16
+legend.title_fontsize: 16
+legend.markerscale: 1.8
+axes.grid: True
+grid.linestyle: -- 
+legend.labelspacing:  0.65
+''')
+plt.style.reload_library()
+```
+```{python}
+# | label: plot-01
+# | fig-cap: "Thrombosis VS Age"
+# | fig-align: "center"
+
+plt.style.use("anly503")
+## plot age and Thrombosis level
+temp = join_df_2.pivot(columns='Thrombosis', values='age_of_sexam')
+_ = temp.plot.hist(bins=20)
+plt.title("Thrombosis VS Age")
+plt.xlabel("Age")
+plt.legend(title="Thrombosis level");
+
+```
+
+### Plot-02: Thrombosis diagnosis keywords
+```{python}
+# | label: fig-plot-02
+# | fig-cap: "Thrombosis diagnosis keywords"
+# | fig-align: "center"
+
+from matplotlib.ticker import FuncFormatter
+hN = plt.barh(key_ls, [negative_dict[k] /
+              nb_negative for k in key_ls], label='negative', color='g')
+hS = plt.barh(key_ls, [-positive_dict[k] /
+              nb_positive for k in key_ls], label='positive')
+
+plt.xlim([-1, 1])
+xt = plt.xticks()
+n = xt[0]
+s = ['{:,.0%}'.format(abs(i)) for i in n]
+plt.xticks(n, s)
+plt.legend(loc='best')
+plt.axvline(0.0)
+plt.title("Thrombosis diagnosis keywords")
+plt.xlabel("Percentage")
+plt.ylabel("Diagnosis")
+plt.legend(title="Thrombosis diagnosis")
+plt.show()
+```
 
 ## Technical summary
 
