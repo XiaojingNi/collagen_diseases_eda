@@ -17,7 +17,9 @@ format:
         highlight-style: github
         link-external-icon: true
         link-external-newwindow: true
+        
 ---
+
 ## Data summary
 In order to explore the mechanisms of collagen diseases, a dataset is extracted from a University hospital database. The overall objective is to study potential factors helping to detect and predict thrombosis, one of the severe complications cased by collagen diseases. The dataset contains three parts: users' information and diagnosis, examination results of users' having thrombosis, and general laboratory examination results. <br>
 
@@ -482,6 +484,7 @@ fig.show();
 # can't use one date to replace another one
 ```
 First date always smaller than description date, so that we can't use one date to replace another one (@fig-descriptionvsfirst). There are some years have less or no data (i.e. 1995). 
+
 #### Special lab information
 Thrombosis level vs examination date (@fig-examinevsthrom). We can see the large portion of case happened after 1992. 1998 is the year have the greatest number of cases. 
 ```{python}
@@ -510,17 +513,18 @@ key_ls = sorted(key_set, key=lambda x: (positive_dict[x], negative_dict[x]))
 nb_positive, nb_negative = sum(
     slab_df['Thrombosis'] > 0), sum(slab_df['Thrombosis'] == 0)
 
-fig = plt.figure(4)
 hN = plt.barh(key_ls, [negative_dict[k] /
               nb_negative for k in key_ls], label='negative', color='g')
 hS = plt.barh(key_ls, [-positive_dict[k] /
               nb_positive for k in key_ls], label='positive')
+
 
 plt.xlim([-1, 1])
 xt = plt.xticks()
 n = xt[0]
 s = ['%.1f' % abs(i) for i in n]
 plt.xticks(n, s)
+
 plt.legend(loc='best')
 plt.axvline(0.0)
 fig.show();
@@ -544,7 +548,8 @@ colors = [d_colors[x] for x in slab_df['Thrombosis']]
 axl = pd.plotting.scatter_matrix(temp, color=colors)
 ```
 
-Parallel coordinates for Thrombosis levels.
+Parallel coordinates for Thrombosis levels. <br>
+**NOTE: The document indicate there are three levels of the Thrombosis, however, the data have 4 levels: 0, 1, 2, 3. Considering it make sense that 3 is another more severe level of Thrombosis, in this EDA, 3 is treated as more severe level of Thrombosis.** 
 ```{python}
 # | label: fig-slabcatecorr
 # | fig-cap: "'KCT', 'RVVT', 'LAC' Correlation"
@@ -600,7 +605,6 @@ ax = temp.plot.hist(bins=20)
 Different level of Thrombosis have various age distribution (@fig-agehist). Regardless of number of samples, severe thrombosis happens high in 30's, while level 2 thrombosis happens during younger age. 
 
 ```{python}
-# | label: fig-labcatecorr
 # | fig-cap: "Parallel coordinates plot of general lab index"
 # | fig-align: "center"
 # | warning: false
@@ -616,7 +620,25 @@ temp_df = join_df[['Thrombosis', 'is_GOT_normal', 'is_GPT_normal',
        'is_DNA_normal', 'is_DNAII_normal','is_UA_normal']
                   ]
 temp_df = temp_df.dropna() ## don't need those without these information
+temp_df['Thrombosis'] = temp_df['Thrombosis'].astype(float).astype(int)
+
 temp_df.reset_index(drop=True)
+
+temp_df1= temp_df[temp_df['Thrombosis'].isin([1,2,3])]
+temp_df1.reset_index(drop=True)
+
+temp_df0= temp_df[temp_df['Thrombosis']==0]
+temp_df0.reset_index(drop=True)
+
+temp_df2= temp_df[temp_df['Thrombosis']==1]
+temp_df2.reset_index(drop=True)
+
+temp_df3= temp_df[temp_df['Thrombosis']==2]
+temp_df3.reset_index(drop=True)
+
+temp_df4= temp_df[temp_df['Thrombosis']==3]
+temp_df4.reset_index(drop=True)
+
 
 fig = plt.figure(9)
 
@@ -624,7 +646,38 @@ pd.plotting.parallel_coordinates(
     temp_df, 'Thrombosis', sort_labels=True, colormap='viridis')
 plt.xticks(rotation=45)
 
-fig.show();
+
+
+fig = plt.figure(10)
+
+pd.plotting.parallel_coordinates(
+    temp_df2, 'Thrombosis', sort_labels=True, colormap='viridis')
+plt.xticks(rotation=45)
+
+
+
+fig = plt.figure(11)
+
+pd.plotting.parallel_coordinates(
+    temp_df3, 'Thrombosis', sort_labels=True, colormap='viridis')
+plt.xticks(rotation=45)
+
+
+
+fig = plt.figure(12)
+
+pd.plotting.parallel_coordinates(
+    temp_df4, 'Thrombosis', sort_labels=True, colormap='viridis')
+plt.xticks(rotation=45)
+
+fig = plt.figure(13)
+
+pd.plotting.parallel_coordinates(
+    temp_df0, 'Thrombosis', sort_labels=True, colormap='viridis')
+plt.xticks(rotation=45)
+
+
+
 ```
 
 ## Final plots
@@ -675,7 +728,7 @@ ax.figure.set_figheight(7)
 plt.title("Thrombosis VS Age")
 plt.xlabel("Age")
 plt.legend(title="Thrombosis level")
-text =plt.text(s='Note: 0 is no thrombosis',y=-220,x=-13,fontsize=14)
+text =plt.text(s='Note: 0 is no thrombosis, 1 is positive thrombosis, 2 is severe thrombosis, 3 is more severe thrombosis.',y=-220,x=-13,fontsize=14)
 plt.savefig("../plot/plot-01.png");
 ```
 
@@ -687,6 +740,7 @@ plt.savefig("../plot/plot-01.png");
 # | warning: false
 
 from matplotlib.ticker import FuncFormatter
+
 fig = plt.figure(11)
 fig.figure.set_figwidth(13)
 fig.figure.set_figheight(7)
@@ -700,10 +754,22 @@ plt.xlim([-1, 1])
 xt = plt.xticks()
 n = xt[0]
 s = ['{:,.0%}'.format(abs(i)) for i in n]
+yhn = [negative_dict[k]/nb_negative for k in key_ls]
+yhs = [-positive_dict[k] /nb_positive for k in key_ls]
+neglabel1 = ['{:,.0%}'.format(abs(i)) for i in yhn]
+neglabel = [i if i!="0%" else "" for i in neglabel1]
+# neglabel = list(map(lambda x: x.replace('\b0%', ''), neglabel1))
+poslabel1 = ['{:,.0%}'.format(abs(i)) for i in yhs]
+poslabel = [i if i!="0%" else "" for i in poslabel1]
+
 plt.xticks(n, s)
+
+plt.bar_label(hN, labels=neglabel, fontsize=14, padding=8)
+plt.bar_label(hS, labels=poslabel,fontsize=14,padding=8)
+
 plt.legend(loc='best')
 plt.axvline(0.0)
-plt.title("Thrombosis diagnosis keywords")
+plt.title("Thrombosis diagnosis keywords",pad=10)
 plt.xlabel("Percentage")
 plt.ylabel("Diagnosis")
 plt.legend(title="Thrombosis diagnosis")
@@ -721,7 +787,9 @@ fig = plt.figure(12,figsize=(14, 12))
 temp = clab_df.loc[:, clab_df.columns != 'ID']
 corr = temp.corr(method='spearman')
 sns.heatmap(corr, annot=True, annot_kws={"size": 28 / np.sqrt(len(corr))})
-
+plt.title("Special lab index correlation plot",pad=10)
+plt.xlabel("Index")
+plt.ylabel("Index")
 plt.savefig("../plot/plot-03.png");
 ```
 
@@ -737,39 +805,38 @@ from matplotlib.patches import Rectangle
 temp_df['Thrombosis'] = temp_df['Thrombosis'].astype(float).astype(int)
 temp_df.reset_index(drop=True)
 
-temp_df1= temp_df[temp_df['Thrombosis'].isin([1,2,3])]
+temp_df1= temp_df[temp_df['Thrombosis'].isin([2,3])]
 temp_df1.reset_index(drop=True)
-
-
-# temp_df0= temp_df[temp_df['Thrombosis']=="0"]
-# temp_df0.reset_index(drop=True)
-
-# temp_df2= temp_df[temp_df['Thrombosis']=="1"]
-# temp_df2.reset_index(drop=True)
-
-# temp_df3= temp_df[temp_df['Thrombosis']=="2"]
-# temp_df3.reset_index(drop=True)
-
-# temp_df4= temp_df[temp_df['Thrombosis']=="3"]
-# temp_df4.reset_index(drop=True)
-
 
 plt.figure(13,figsize=(18, 10))
 
 pd.plotting.parallel_coordinates(
-    temp_df1.sort_values(by='Thrombosis'), 'Thrombosis', sort_labels=True,color=( '#FF6B6B','#556270', '#4ECDC4'))
+    temp_df1.sort_values(by='Thrombosis'), 'Thrombosis', sort_labels=True,color=( '#FF6B6B', '#4ECDC4'))
 plt.xticks(rotation=45)
-plt.title("General lab examinatoion VS Thrombosis", pad=20, fontsize = 22)
+plt.title("General lab examinatoion VS Severe thrombosis", pad=20, fontsize = 22)
 plt.xlabel("Examinatoion index",fontsize = 18)
 plt.ylabel("Results",fontsize = 18)
 plt.legend(title="Thrombosis level",bbox_to_anchor=(1, 0.8))
+text = plt.text(s='Note: 2 is severe thrombosis, 3 is more severe thrombosis.',y=-0.8,x=-1,fontsize=14)
+
+plt.gca().add_patch(Rectangle((4,0.9),3,0.2,
+                    edgecolor='black',
+                    facecolor='none',
+                    lw=4))
+plt.gca().add_patch(Rectangle((13,0.9),4,0.2,
+                    edgecolor='black',
+                    facecolor='none',
+                    lw=4))
+
 plt.savefig("../plot/plot-04.png", bbox_inches = 'tight');
 
 ```
 
 ## Technical summary
 
-
+This EDA has been implemented several techniques including histogram, correlation plot, and parallel coordinate plot. The histogram is used to obtain the idea of how data is distributed. For example, in @fig-examinevsthrom, the examination year is plotted against exmanimation count with various thrombosis levels, which demonstrate in what years, the different levels of thrombosis occured. This kind of plot can imply where the high frequency happened and need to be further examined. Correlation plot used Spearman ranked correlation ([source](https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient)) in @fig-heatmaplab and @fig-slabcorr. These plots demonstrate the correlation among variables. If there are some high correlationed features, these are the signs to further analyze high correlated feature or need to consider during modeling process. Finally, the parallel coordinate plots used in @fig-slabcatecorr and @fig-plot-04 are ways to show cluster information of categorical varibles. The color of the lines indicate different groups, while the patterns of the color-coded lines implying the clustering. <br>
+The datasets are required some manipulation and cleaning. In this EDA, the datasets have been deduped and checked missing values for exploration. However, for different tasks, missing values were treated differently. In the correlation calculation, missing values were removed, as most of the features in the correlation plot has a few missing values. For creating new variables to measure if a test is in the normal range, NA is introduced into the data when there was a bad entry. For example, if the measurement suposed to be a numeric but it is not, it will fill with NaN. Those NaN is not meaningless. It can indicate not having the test which implys that doctors may think the index is not relevant to thrombosis. <br>
+The datasets and the documents also have some uncertainties. For example, the data document indicate there are three levels of the Thrombosis, however, the data have 4 levels: 0, 1, 2, 3. Considering it make sense that 3 is another more severe level of Thrombosis, in this EDA, 3 is treated as more severe level of Thrombosis. <br>
 
 
 
