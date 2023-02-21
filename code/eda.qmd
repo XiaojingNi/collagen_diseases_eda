@@ -4,7 +4,8 @@ subtitle: "for collagen diseases dataset"
 author:
   - name: Xiaojing Ni
     affiliations:
-      - name: Georgetown University        
+      - name: Georgetown University  
+    
 date: today
 format:
     html:
@@ -19,6 +20,7 @@ format:
         link-external-newwindow: true
         
 ---
+The code and data can be found in Github repo: [https://github.com/XiaojingNi/collagen_diseases_eda](https://github.com/XiaojingNi/collagen_diseases_eda)
 
 ## Data summary
 In order to explore the mechanisms of collagen diseases, a dataset is extracted from a University hospital database. The overall objective is to study potential factors helping to detect and predict thrombosis, one of the severe complications cased by collagen diseases. The dataset contains three parts: users' information and diagnosis, examination results of users' having thrombosis, and general laboratory examination results. <br>
@@ -724,12 +726,12 @@ join_df_2['Thrombosis'] = join_df_2['Thrombosis'].astype(float).astype(int)
 temp = join_df_2.pivot(columns='Thrombosis', values='age_of_sexam')
 ax = temp.plot.hist(bins=20,edgecolor = "white")
 ax.figure.set_figwidth(10)
-ax.figure.set_figheight(7)
+ax.figure.set_figheight(6)
 plt.title("Thrombosis VS Age")
 plt.xlabel("Age")
 plt.legend(title="Thrombosis level")
-text =plt.text(s='Note: 0 is no thrombosis, 1 is positive thrombosis, 2 is severe thrombosis, 3 is more severe thrombosis.',y=-220,x=-13,fontsize=14)
-plt.savefig("../plot/plot-01.png");
+text =plt.text(s='Note: 0 is no thrombosis, 1 is positive thrombosis,\n 2 is severe thrombosis, 3 is more severe thrombosis.',y=-350,x=-13,fontsize=14)
+plt.savefig("../plot/plot-01.png", bbox_inches = 'tight');
 ```
 
 ### Plot-02: Thrombosis diagnosis keywords
@@ -764,15 +766,15 @@ poslabel = [i if i!="0%" else "" for i in poslabel1]
 
 plt.xticks(n, s)
 
-plt.bar_label(hN, labels=neglabel, fontsize=14, padding=8)
-plt.bar_label(hS, labels=poslabel,fontsize=14,padding=8)
+plt.bar_label(hN, labels=neglabel, fontsize=18, padding=8)
+plt.bar_label(hS, labels=poslabel,fontsize=18,padding=8)
 
 plt.legend(loc='best')
 plt.axvline(0.0)
-plt.title("Thrombosis diagnosis keywords",pad=10)
-plt.xlabel("Percentage")
-plt.ylabel("Diagnosis")
-plt.legend(title="Thrombosis diagnosis")
+plt.title("Thrombosis diagnosis keywords",pad=10, fontsize = 28)
+plt.xlabel("Percentage",fontsize = 24)
+plt.ylabel("Diagnosis",fontsize = 24)
+plt.legend(title="Thrombosis diagnosis",fontsize = 24)
 plt.savefig("../plot/plot-02.png");
 ```
 
@@ -787,9 +789,9 @@ fig = plt.figure(12,figsize=(14, 12))
 temp = clab_df.loc[:, clab_df.columns != 'ID']
 corr = temp.corr(method='spearman')
 sns.heatmap(corr, annot=True, annot_kws={"size": 28 / np.sqrt(len(corr))})
-plt.title("Special lab index correlation plot",pad=10)
-plt.xlabel("Index")
-plt.ylabel("Index")
+plt.title("Special lab index correlation plot",pad=10, fontsize = 28 )
+plt.xlabel("Index",fontsize = 24)
+plt.ylabel("Index",fontsize = 24)
 plt.savefig("../plot/plot-03.png");
 ```
 
@@ -813,11 +815,11 @@ plt.figure(13,figsize=(18, 10))
 pd.plotting.parallel_coordinates(
     temp_df1.sort_values(by='Thrombosis'), 'Thrombosis', sort_labels=True,color=( '#FF6B6B', '#4ECDC4'))
 plt.xticks(rotation=45)
-plt.title("General lab examinatoion VS Severe thrombosis", pad=20, fontsize = 22)
-plt.xlabel("Examinatoion index",fontsize = 18)
-plt.ylabel("Results",fontsize = 18)
+plt.title("General lab examination VS Severe thrombosis", pad=20, fontsize = 36)
+plt.xlabel("Examinatoion index",fontsize = 32)
+plt.ylabel("Results",fontsize = 32)
 plt.legend(title="Thrombosis level",bbox_to_anchor=(1, 0.8))
-text = plt.text(s='Note: 2 is severe thrombosis, 3 is more severe thrombosis.',y=-0.8,x=-1,fontsize=14)
+text = plt.text(s='Note: 2 is severe thrombosis, 3 is more severe thrombosis.',y=-0.8,x=-1,fontsize=24)
 
 plt.gca().add_patch(Rectangle((4,0.9),3,0.2,
                     edgecolor='black',
@@ -835,7 +837,7 @@ plt.savefig("../plot/plot-04.png", bbox_inches = 'tight');
 ## Technical summary
 
 This EDA has been implemented several techniques including histogram, correlation plot, and parallel coordinate plot. The histogram is used to obtain the idea of how data is distributed. For example, in @fig-examinevsthrom, the examination year is plotted against exmanimation count with various thrombosis levels, which demonstrate in what years, the different levels of thrombosis occured. This kind of plot can imply where the high frequency happened and need to be further examined. Correlation plot used Spearman ranked correlation ([source](https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient)) in @fig-heatmaplab and @fig-slabcorr. These plots demonstrate the correlation among variables. If there are some high correlationed features, these are the signs to further analyze high correlated feature or need to consider during modeling process. Finally, the parallel coordinate plots used in @fig-slabcatecorr and @fig-plot-04 are ways to show cluster information of categorical varibles. The color of the lines indicate different groups, while the patterns of the color-coded lines implying the clustering. <br>
-The datasets are required some manipulation and cleaning. In this EDA, the datasets have been deduped and checked missing values for exploration. However, for different tasks, missing values were treated differently. In the correlation calculation, missing values were removed, as most of the features in the correlation plot has a few missing values. For creating new variables to measure if a test is in the normal range, NA is introduced into the data when there was a bad entry. For example, if the measurement suposed to be a numeric but it is not, it will fill with NaN. Those NaN is not meaningless. It can indicate not having the test which implys that doctors may think the index is not relevant to thrombosis. <br>
+The datasets are required some manipulation and cleaning. In this EDA, the datasets have been deduped and checked missing values for exploration. However, for different tasks, missing values were treated differently. In the correlation calculation, missing values were removed, as most of the features in the correlation plot has a few missing values. For creating new variables to measure if a test is in the normal range, NA is introduced into the data when there was a bad entry. For example, if the measurement suposed to be a numeric but it is not, it will fill with NaN. Those NaN is not meaningless. It can indicate not having the test which implys that doctors may think the index is not relevant to thrombosis. The missing values also block me from exploring my inital question about the symptoms. Thus, I changed my analysis to focusing on diagnosis and thrombosis relationship. <br>
 The datasets and the documents also have some uncertainties. For example, the data document indicate there are three levels of the Thrombosis, however, the data have 4 levels: 0, 1, 2, 3. Considering it make sense that 3 is another more severe level of Thrombosis, in this EDA, 3 is treated as more severe level of Thrombosis. <br>
 
 
